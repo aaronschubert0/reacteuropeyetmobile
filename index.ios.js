@@ -86,10 +86,10 @@ var styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1693A5',
+    backgroundColor: '#4656a0',
   },
   scrollView: {
-        backgroundColor: '#1693A5',
+        backgroundColor: '#4656a0',
   },
   welcome: {
     fontSize: 65,
