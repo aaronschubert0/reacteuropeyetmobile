@@ -154,14 +154,20 @@ var SlackRTM = React.createClass({
             console.log('MentionUsername '+mentionedUsername);
            messageText = message.text.replace(mention, mentionedUsername);
       };
-      var subType = message.subtype;
-      if (subType) {
-        username = '';
+      var mentionMatch = messageText.match(/<@(?:([^:]+))>:/);
+      if (mentionMatch) {
+        mentionMatch.forEach((mentionID) => {
+          users.forEach((user) => {
+           if (user.id === mentionID) {
+              var name = '@'+user.name;
+              messageText = messageText.replace('<@'+mentionID+'>:',name);
+           };
+          });
+        })
       };
 
-     //  var individualUser = this.fetchUserWithID(message.user);
-      return (
-        <View style={styles.messageContainer}>
+
+     var view = <View style={styles.messageContainer}>
           <Image
             source={{uri: individualUser.profile.image_72}}
             style={styles.thumbnail}
@@ -170,7 +176,26 @@ var SlackRTM = React.createClass({
             <Text style={styles.username}>{username}</Text>
             <Text style={styles.message}>{messageText}</Text>
           </View>
-        </View>
+        </View>;
+
+      var subType = message.subtype;
+      if (subType) {
+        view = <View style={styles.messageContainer}>
+          <Image
+            source={{uri: individualUser.profile.image_72}}
+            style={styles.thumbnail}
+          />
+          <View style={styles.messageHolder}>
+            <Text style={[styles.message,{marginTop:16}]}>{messageText}</Text>
+          </View>
+        </View>;        
+      };
+
+     //  var individualUser = this.fetchUserWithID(message.user);
+
+
+      return (
+       view
       );
    },
 
@@ -232,7 +257,8 @@ var styles = StyleSheet.create({
   height: 30,
   borderRadius : 4,
   marginLeft: 10,
-  marginTop: 13,
+  marginTop: 10,
+  marginBottom: 10,
   },
   messageContainer: {
     flex: 1,
@@ -256,7 +282,6 @@ var styles = StyleSheet.create({
   messageHolder: {
     flex: 1,
     flexDirection: 'column',
-
   },
   listView: {
     paddingTop: 10,
