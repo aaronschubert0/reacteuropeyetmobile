@@ -135,12 +135,10 @@ var SlackRTM = React.createClass({
     );
   },
     renderMessage: function(message) {
-      console.log(JSON.stringify(message, null, 4));
       var individualUser;
       var users = this.state.users;
       users.forEach((user) => {
        if (user.id === message.user) {
-        console.log('Has ID')
           individualUser = user;
        };
       });
@@ -149,12 +147,10 @@ var SlackRTM = React.createClass({
       var match =  message.text.match(/<@(?:([^|]+)\|([^>]+))>/);
       if (match) {
         var mention = match[0];
-        console.log('Mention '+mention);
         var mentionedUsername = '@'+match[2]; 
-            console.log('MentionUsername '+mentionedUsername);
            messageText = message.text.replace(mention, mentionedUsername);
       };
-      var mentionMatch = messageText.match(/<@(?:([^:]+))>:/);
+      var mentionMatch = messageText.match(/<@(?:([^:]+))>:/g);
       if (mentionMatch) {
         mentionMatch.forEach((mentionID) => {
           users.forEach((user) => {
@@ -165,8 +161,17 @@ var SlackRTM = React.createClass({
           });
         })
       };
-
-
+      var mentionMatch2 = messageText.match(/<@(?:([^>]+))>/);
+      if (mentionMatch2) {
+        mentionMatch2.forEach((mentionID) => {
+          users.forEach((user) => {
+           if (user.id === mentionID) {
+              var name = '@'+user.name;
+              messageText = messageText.replace('<@'+mentionID+'>',name);
+           };
+          });
+        })
+      };
      var view = <View style={styles.messageContainer}>
           <Image
             source={{uri: individualUser.profile.image_72}}
