@@ -13,8 +13,10 @@ var {
   Text,
   View,
   ScrollView,
+  WebSocket,
+  ListView,
+  Image,
 } = React;
-
 var reacteuropeyetmobile = React.createClass({
 
   getInitialState: function() {
@@ -76,16 +78,188 @@ var reacteuropeyetmobile = React.createClass({
           </Text>
           </View>
        </View>
+       <SlackRTM />
       </ScrollView>
     );
   }
 });
+
+var SlackRTM = React.createClass({
+    getInitialState: function () {
+        return {
+            dataSource: new ListView.DataSource({
+             rowHasChanged: (row1, row2) => row1 !== row2,
+            }),
+            users: [],
+            loaded: false,
+            messages: [],
+        };
+    },
+
+    componentDidMount: function () {
+            this.getChannelHistory(),
+            console.log('Getting Channel history')
+    },
+
+    getChannelHistory: function () {
+        return fetch('https://slack.com/api/channels.history?token=xoxp-4806393214-4917790761-4934962156-2d19b7&channel=C04PQBK9C')
+            .then((response) => response.json())
+            .then((responseData) => {
+              console.log('Response'+responseData.messages);
+                this.setState({
+                  dataSource: this.state.dataSource.cloneWithRows(responseData.messages),
+                  messages: responseData.messages,
+                });
+                this.getListOfUsers();
+            });   
+    },
+
+    getListOfUsers: function () {
+          return fetch('https://slack.com/api/users.list?token=xoxp-4806393214-4917790761-4934962156-2d19b7')
+            .then((response) => response.json())
+            .then((responseData) => {
+                this.setState({
+                  users: responseData.members,
+                  loaded:true,
+                });
+            }); 
+    },
+
+    renderLoadingView: function() {
+    return (
+      <View style={styles.container}>
+        <Text>
+          Loading slack conversation...
+        </Text>
+      </View>
+    );
+  },
+    renderMessage: function(message) {
+      console.log(JSON.stringify(message, null, 4));
+      var individualUser;
+      var users = this.state.users;
+      users.forEach((user) => {
+       if (user.id === message.user) {
+        console.log('Has ID')
+          individualUser = user;
+       };
+      });
+      var messageText = message.text;
+      var username = '@'+individualUser.name;
+      var match =  message.text.match(/<@(?:([^|]+)\|([^>]+))>/);
+      if (match) {
+        var mention = match[0];
+        console.log('Mention '+mention);
+        var mentionedUsername = '@'+match[2]; 
+            console.log('MentionUsername '+mentionedUsername);
+           messageText = message.text.replace(mention, mentionedUsername);
+      };
+      var subType = message.subtype;
+      if (subType) {
+        username = '';
+      };
+
+     //  var individualUser = this.fetchUserWithID(message.user);
+      return (
+        <View style={styles.messageContainer}>
+          <Image
+            source={{uri: individualUser.profile.image_72}}
+            style={styles.thumbnail}
+          />
+          <View style={styles.messageHolder}>
+            <Text style={styles.username}>{username}</Text>
+            <Text style={styles.message}>{messageText}</Text>
+          </View>
+        </View>
+      );
+   },
+
+   escapeRegExp: function(str) {
+    return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+  },
+
+   fetchUserWithID: function (userID){
+    var users = this.state.users;
+    users.forEach((user) => {
+          if (user.id == userID) {
+              return user;
+          };
+      });
+   },
+    
+    render: function () {
+          if (!this.state.loaded) {
+      return this.renderLoadingView();
+    }
+        return (
+            <ListView
+            dataSource={this.state.dataSource}
+            renderRow={this.renderMessage}
+            style={styles.listView}
+            />
+        );
+    }
+});
+
+// var SlackRTMWebSocket = React.createClass ({
+
+//   getWebSocketUrl: function () {
+//         return fetch('https://slack.com/api/rtm.start?token=xoxp-4806393214-4917790761-4934962156-2d19b7')
+//             .then((response) => response.json())
+//             .then((responseData) => {
+//                 return responseData.url
+//             });
+//     },
+
+//     connectWebSocket: function (url) {
+//         var ws = new window.WebSocket(url);
+
+//         ws.onmessage = (message) => {
+//             console.log(message);
+//         };
+//     },
+// });
 
 var styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#4656a0',
+  },
+  thumbnail: {
+  width: 30,
+  height: 30,
+  borderRadius : 4,
+  marginLeft: 10,
+  marginTop: 13,
+  },
+  messageContainer: {
+    flex: 1,
+    flexDirection: 'row',
+        borderTopWidth: 0.5,
+    borderColor: 'white',
+  },
+  username: {
+    marginTop: 10,
+    marginLeft: 10,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  message: {
+    marginLeft: 10,
+    marginTop: 5,
+    marginBottom: 10,
+    marginRight: 10,
+    color: 'white',
+  },
+  messageHolder: {
+    flex: 1,
+    flexDirection: 'column',
+
+  },
+  listView: {
+    paddingTop: 10,
     backgroundColor: '#4656a0',
   },
   scrollView: {
