@@ -7,6 +7,8 @@
 var React = require('react-native');
 var bem = require('bem-class');
 var moment = require('moment');
+var emojiJSON = require('./emoji.json');
+
 var {
   AppRegistry,
   StyleSheet,
